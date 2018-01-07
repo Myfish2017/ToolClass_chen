@@ -10,15 +10,28 @@ using std::string;
 * @author : chen
 * @date : 2018/1/5 21:02
 * @describe: 主要用于在c++程序中调用python-tensorflow程序的部分代码
+			(需要预先定义系统全局变量：python环境路径例如：CPythonEnv __PYTHON_ENV_PATH__ = L"C:/Users/chen/Anaconda3/envs/py35";)
 * @last change : 
 *****************************************************************************/
+
+
+using CPythonEnv = wchar_t *const;
+extern CPythonEnv __PYTHON_ENV_PATH__;
+
 class EmbedPython
 {
-public:
-	EmbedPython(wchar_t *python_env = L"C:/Users/chen/Anaconda3/envs/py35")
+private:
+	EmbedPython()
 	{
-		Py_SetPythonHome(python_env);
+		Py_SetPythonHome(__PYTHON_ENV_PATH__);
 		Py_Initialize();
+	}
+public:
+	static EmbedPython* Get()
+	{
+		if (instance == nullptr)
+			instance = new EmbedPython;
+		return instance;
 	}
 	bool load_file_and_function(const string &filepath,const string &filename,const string &funcname)
 	{
@@ -67,5 +80,10 @@ public:
 private:
 	PyObject *file_module;
 	PyObject *func_module;
-
+	static EmbedPython *instance;
 };
+
+
+EmbedPython* EmbedPython::instance = nullptr;
+
+
