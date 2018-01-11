@@ -4,7 +4,9 @@
 #include<vector>
 #include <climits>
 #include <algorithm>
+#include <KMeanClassify.h>
 #include "LineSegment.h"
+
 
 using std::vector;
 
@@ -101,12 +103,12 @@ private:
 	bool cmp_step_2(const LineSegment &lft, const LineSegment &rgh, int limit) const
 	{
 		//计算2直线的距离,如果小于5个像素，返回true，否则返回false;
-		double jl;
+		double distance;
 		double a1 = lft.Slope();
 		double a2 = rgh.Slope();
 		if (lft.Slope_existence() == false || rgh.Slope_existence() == false)
 		{
-			jl = abs(rgh[0] - lft[0]);
+			distance = abs(rgh[0] - lft[0]);
 		}
 		else if (a1*a2 < 0)//斜率一正一负判断非同类
 		{
@@ -115,29 +117,25 @@ private:
 		}
 		else
 		{
-			double a_ = (a1 + a2) / 2;
-			double fz = sqrt(a_*a_ + 1);
-			double rgh_intercept = -rgh[1] - a_*rgh[0];
-			double lft_intercept = -lft[1] - a_*lft[0];
-			jl = abs(rgh_intercept - lft_intercept) / fz;
+			SubLineSegmentByDistance(lft, rgh, distance);
 			//角度比较大的对距离因素影响偏大
 			//对之处理
-			if ((abs(rgh.Angle()) + abs(lft.Angle())) > PunishmentAngle() && jl > PunishmentValue())
+			if ((abs(rgh.Angle()) + abs(lft.Angle())) > PunishmentAngle() && distance > PunishmentValue())
 			{
 				//角度处理
 				std::cout << "步骤二:经过角度处理：因为斜率偏大\n";
-				jl -= PunishmentValue();
+				distance -= PunishmentValue();
 			}
 			//jl = abs(rgh.getIntercept() - lft.getIntercept()) / fz;
 		}
-		if (jl < limit)
+		if (distance < limit)
 		{
-			std::cout << "步骤二:距离判断为同线段:" << jl << "\n";
+			std::cout << "步骤二:距离判断为同线段:" << distance << "\n";
 			return true;
 		}
 		else
 		{
-			std::cout << "步骤二:距离判断为非同线段:" << jl << "\n";
+			std::cout << "步骤二:距离判断为非同线段:" << distance << "\n";
 			return false;
 		}
 	}
@@ -170,6 +168,23 @@ private:
 	void ify_step_2()
 	{
 		for (int i = 0; i < container_step1.size(); ++i)
+		{
+			vector<LineSegment> lineSegment_vec = container_step1[i];
+			if (lineSegment_vec.size() <= 1)
+			{
+				break;
+			}
+			vector<vector<LineSegment>> result;
+			KMeanClassify<LineSegment>(lineSegment_vec, result, 2,SubLineSegmentByDistance);
+			LineSegment lineSegment;
+			vector<LineSegment> result_vec;
+			lineSegment = algorthm_for_2(result[0]);
+			result_vec.push_back(lineSegment);
+			lineSegment = algorthm_for_2(result[1]);
+			result_vec.push_back(lineSegment);
+			container_step2.push_back(result_vec);
+		}
+		/*for (int i = 0; i < container_step1.size(); ++i)
 		{
 			int limit = Max_distance();
 			while (1)
@@ -211,7 +226,7 @@ private:
 					break;
 				}
 			}
-		}
+		}*/
 	}
 	//使每个组别由一条线段来描述
 	void ify_step_3()

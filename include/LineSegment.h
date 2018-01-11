@@ -255,5 +255,4 @@ bool KMeanLineSegment(const vector<LineSegment> &lineSegment_vec, vector<vector<
 	}
 	return true;
 }
-
 #endif
