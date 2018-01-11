@@ -167,6 +167,7 @@ private:
 	//使每个组别仅仅抽象成只有2条线段
 	void ify_step_2()
 	{
+		//k均值
 		for (int i = 0; i < container_step1.size(); ++i)
 		{
 			vector<LineSegment> lineSegment_vec = container_step1[i];
@@ -174,16 +175,38 @@ private:
 			{
 				break;
 			}
-			vector<vector<LineSegment>> result;
-			KMeanClassify<LineSegment>(lineSegment_vec, result, 2,SubLineSegmentByDistance);
+			vector<vector<LineSegment>> result(2);
+			for (size_t i = 0; i < lineSegment_vec.size(); ++i)
+			{
+				if (lineSegment_vec[i].Angle() > 0)
+				{
+					result[0].push_back(lineSegment_vec[i]);
+				}
+				else
+				{
+					result[1].push_back(lineSegment_vec[i]);
+				}
+			}
+			if (result[0].size() == 0 || result[1].size() == 0)
+			{
+				result.clear();
+				KMeanClassify<LineSegment>(lineSegment_vec, result, 2, SubLineSegmentByDistance);
+			}
 			LineSegment lineSegment;
 			vector<LineSegment> result_vec;
 			lineSegment = algorthm_for_2(result[0]);
 			result_vec.push_back(lineSegment);
 			lineSegment = algorthm_for_2(result[1]);
 			result_vec.push_back(lineSegment);
+			double value = 0;
+			SubLineSegmentByDistance(result_vec[0], result_vec[1],value);
+			if (value < 2)
+			{
+				continue;
+			}
 			container_step2.push_back(result_vec);
 		}
+		//以前的算法
 		/*for (int i = 0; i < container_step1.size(); ++i)
 		{
 			int limit = Max_distance();

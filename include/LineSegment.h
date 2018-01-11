@@ -87,10 +87,11 @@ bool lineCmp(const LineSegment &lft, const LineSegment &rgh)
 * @outparam : 1个线段角度差值引用
 * @last change :
 *****************************************************************************/
-void SubLineSegmentByAngle(const LineSegment &lft, const LineSegment &rgh, double &value)
+bool SubLineSegmentByAngle(const LineSegment &lft, const LineSegment &rgh, double &value)
 {
 	value = std::min(std::abs(rgh.Angle() - lft.Angle()),
 		180 - std::abs(rgh.Angle()) - std::abs(lft.Angle()));
+	return true;
 }
 
 /*****************************************************************************
@@ -126,10 +127,9 @@ bool SubLineSegmentParallelByDistance(const LineSegment &lft, const LineSegment 
 
 bool SubLineSegmentByDistance(const LineSegment &lft, const LineSegment &rgh, double &value)
 {
-	if (lft.Slope_existence() == false || rgh.Slope_existence() == false)
+	if (lft.Slope_existence() == false|| rgh.Slope_existence() == false)
 	{
 		value = abs(rgh[0] - lft[0]);
-		return true;
 	}
 	else
 	{
@@ -141,8 +141,8 @@ bool SubLineSegmentByDistance(const LineSegment &lft, const LineSegment &rgh, do
 		double rgh_intercept = -rgh[1] - slope_ave*rgh[0];
 		double lft_intercept = -lft[1] - slope_ave*lft[0];
 		value = abs(rgh_intercept - lft_intercept) / fz;
-		return true;
 	}
+	return true;
 }
 
 /*****************************************************************************
@@ -220,7 +220,7 @@ bool KMeanLineSegment(const vector<LineSegment> &lineSegment_vec, vector<vector<
 				continue;
 			}
 			LineSegment lineSegment_curr = lineSegment_vec[i];
-			int min_distance_index = 0;
+			size_t min_distance_index = 0;
 			double min_value = INT_MAX;
 			double value;
 			for (size_t j = 0; j < types; ++j)

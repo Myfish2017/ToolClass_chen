@@ -77,7 +77,7 @@ bool KMeanClassify(const vector<ElementType> &element_vec, vector<vector<Element
 				continue;
 			}
 			ElementType lineSegment_curr = element_vec[i];
-			int min_distance_index = 0;
+			size_t min_distance_index = 0;
 			double min_value = INT_MAX;
 			double value;
 			for (size_t j = 0; j < types; ++j)
