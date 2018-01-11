@@ -5,8 +5,11 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <vector>
+#include <map>
+#include <functional>
 using std::vector;
 using cv::Vec4i;
+using std::map;
 
 
 /*****************************************************************************
@@ -98,49 +101,48 @@ void SubLineSegmentByAngle(const LineSegment &lft, const LineSegment &rgh, doubl
 * @outparam : 距离引用
 * @last change :
 *****************************************************************************/
-bool SubLineSegmentByDistance(const LineSegment &lft, const LineSegment &rgh, double &value, int type = 0)
+bool SubLineSegmentParallelByDistance(const LineSegment &lft, const LineSegment &rgh, double &value)
 {
-	if (type == 0)
+	if (lft.Slope_existence() == true)
 	{
-		if (lft.Slope_existence() == true)
+		if (lft.Slope() != rgh.Slope())
 		{
-			if (lft.Slope() != rgh.Slope())
-			{
-				return false;
-			}
-			double fz = sqrt(rgh.Slope()*rgh.Slope() + 1);
-			double rgh_intercept = -rgh[1] - rgh.Slope()*rgh[0];
-			double lft_intercept = -lft[1] - lft.Slope()*lft[0];
-			value = abs(rgh_intercept - lft_intercept) / fz;
-			return true;
+			return false;
 		}
-		else
-		{
-			value = abs(rgh[0] - lft[0]);
-			return true;
-		}
+		double fz = sqrt(rgh.Slope()*rgh.Slope() + 1);
+		double rgh_intercept = -rgh[1] - rgh.Slope()*rgh[0];
+		double lft_intercept = -lft[1] - lft.Slope()*lft[0];
+		value = abs(rgh_intercept - lft_intercept) / fz;
+		return true;
 	}
-	else if (type == 1)
+	else
 	{
-		if (lft.Slope_existence() == false || rgh.Slope_existence() == false)
-		{
-			value = abs(rgh[0] - lft[0]);
-			return true;
-		}
-		else
-		{
-			/*double angle_ave = (lft.Angle() + rgh.Angle()) / 2;
-			double slope_ave = tan(angle_ave);*/
-			
-			double slope_ave = (lft.Slope() + rgh.Slope()) / 2;
-			double fz = sqrt(slope_ave*slope_ave + 1);
-			double rgh_intercept = -rgh[1] - slope_ave*rgh[0];
-			double lft_intercept = -lft[1] - slope_ave*lft[0];
-			value = abs(rgh_intercept - lft_intercept) / fz;
-			return true;
-		}
+		value = abs(rgh[0] - lft[0]);
+		return true;
 	}
 	return false;
+}
+
+
+bool SubLineSegmentByDistance(const LineSegment &lft, const LineSegment &rgh, double &value)
+{
+	if (lft.Slope_existence() == false || rgh.Slope_existence() == false)
+	{
+		value = abs(rgh[0] - lft[0]);
+		return true;
+	}
+	else
+	{
+		/*double angle_ave = (lft.Angle() + rgh.Angle()) / 2;
+		double slope_ave = tan(angle_ave);*/
+
+		double slope_ave = (lft.Slope() + rgh.Slope()) / 2;
+		double fz = sqrt(slope_ave*slope_ave + 1);
+		double rgh_intercept = -rgh[1] - slope_ave*rgh[0];
+		double lft_intercept = -lft[1] - slope_ave*lft[0];
+		value = abs(rgh_intercept - lft_intercept) / fz;
+		return true;
+	}
 }
 
 /*****************************************************************************
@@ -149,9 +151,10 @@ bool SubLineSegmentByDistance(const LineSegment &lft, const LineSegment &rgh, do
 * @date : 2018/1/10 9:42
 * @inparam : 线段_向量
 * @outparam : 最能模拟这组线段的线段下标引用
-* @last change : 
+* @last change :
 *****************************************************************************/
-void MinAvgDistance(const vector<LineSegment> &lineSegment,size_t &index)
+void MinAvgDistance(const vector<LineSegment> &lineSegment, size_t &index,
+	std::function<bool(const LineSegment&, const LineSegment&, double&)> function)
 {
 	double distance_sum = INT_MAX;
 	for (size_t i = 0; i < lineSegment.size(); ++i)
@@ -161,13 +164,13 @@ void MinAvgDistance(const vector<LineSegment> &lineSegment,size_t &index)
 		for (size_t j = 0; j < lineSegment.size(); ++j)
 		{
 			double value;
-			SubLineSegmentByDistance(curr, lineSegment[j],value);
+			function(curr, lineSegment[j], value);
 			curr_sum += value;
 		}
 		if (curr_sum < distance_sum)
 		{
 			index = i;
-			curr_sum = distance_sum;
+			distance_sum = curr_sum;
 		}
 	}
 }
@@ -178,15 +181,78 @@ void MinAvgDistance(const vector<LineSegment> &lineSegment,size_t &index)
 * @author : chen
 * @date : 2018/1/10 10:18
 * @describe : K_均值聚类使线段多分
-* @last change : 
+* @last change :
 *****************************************************************************/
-bool KMeanLineSegment(const vector<LineSegment> &lineSegment_vec, vector<vector<LineSegment>> &result, size_t types)
+bool KMeanLineSegment(const vector<LineSegment> &lineSegment_vec, vector<vector<LineSegment>> &result
+	, size_t types, std::function<bool(const LineSegment&, const LineSegment&, double&)> function)
 {
 	if (lineSegment_vec.size() < types)
 	{
-		return false;
+		types = lineSegment_vec.size();
 	}
-
+	vector<vector<LineSegment>> result_container;
+	vector<vector<size_t>> types_index_vec;
+	vector<size_t> centroid_vec;
+	types_index_vec.resize(types);
+	result_container.resize(types);
+	for (size_t i = 0; i < types; ++i)
+	{
+		result_container[i].push_back(lineSegment_vec[i]);
+		types_index_vec[i].push_back(i);
+		centroid_vec.push_back(i);
+	}
+	bool loop_flag = true;
+	while (loop_flag)
+	{
+		for (size_t i = 0; i < lineSegment_vec.size(); ++i)
+		{
+			bool centroid_flag = false;
+			for (size_t j = 0; j < centroid_vec.size(); ++j)
+			{
+				if (centroid_vec[j] == i)
+				{
+					centroid_flag = true;
+					break;
+				}
+			}
+			if (centroid_flag == true)
+			{
+				continue;
+			}
+			LineSegment lineSegment_curr = lineSegment_vec[i];
+			int min_distance_index = 0;
+			double min_value = INT_MAX;
+			double value;
+			for (size_t j = 0; j < types; ++j)
+			{
+				function(lineSegment_curr, result_container[j][0], value);
+				if (value < min_value)
+				{
+					min_value = value;
+					min_distance_index = j;
+				}
+			}
+			result_container[min_distance_index].push_back(lineSegment_curr);
+			types_index_vec[min_distance_index].push_back(i);
+		}
+		size_t index = 0;
+		loop_flag = false;
+		centroid_vec.clear();
+		result = result_container;
+		for (size_t i = 0; i < types; ++i)
+		{
+			MinAvgDistance(result_container[i], index, function);
+			result_container[i][0] = result_container[i][index];
+			types_index_vec[i][0] = types_index_vec[i][index];
+			centroid_vec.push_back(types_index_vec[i][index]);
+			result_container[i].erase(result_container[i].begin() + 1, result_container[i].end());
+			types_index_vec[i].erase(types_index_vec[i].begin() + 1, types_index_vec[i].end());
+			if (index != 0)
+			{
+				loop_flag = true;
+			}
+		}
+	}
 	return true;
 }
 

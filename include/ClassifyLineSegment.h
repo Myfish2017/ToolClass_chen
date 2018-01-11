@@ -115,7 +115,7 @@ private:
 		}
 		else
 		{
-			SubLineSegmentByDistance(lft, rgh, distance, 1);
+			SubLineSegmentByDistance(lft, rgh, distance);
 			//角度比较大的对距离因素影响偏大
 			//对之处理
 			if ((abs(rgh.Angle()) + abs(lft.Angle())) > PunishmentAngle() && distance > PunishmentValue())
@@ -167,46 +167,20 @@ private:
 	{
 		for (int i = 0; i < container_step1.size(); ++i)
 		{
-			int limit = Max_distance();
-			while (1)
+			vector<LineSegment> lineSegment_vec = container_step1[i];
+			if (lineSegment_vec.size() <= 1)
 			{
-				vector<LineSegment> lineSegment_vec = container_step1[i];
-				if (lineSegment_vec.size() <= 1)
-				{
-					break;
-				}
-				vector<LineSegment> lineSegment_vec_1, lineSegment_vec_2, lineSegment_vec_3;
-				LineSegment lineSegment;
-				lineSegment_vec_1.push_back(lineSegment_vec[0]);
-				for (int j = 1; j < lineSegment_vec.size(); ++j)
-				{
-					if (cmp_step_2(lineSegment_vec[0], lineSegment_vec[j], limit))
-					{
-						lineSegment_vec_1.push_back(lineSegment_vec[j]);
-					}
-					else
-					{
-						lineSegment_vec_2.push_back(lineSegment_vec[j]);
-					}
-				}
-				if (lineSegment_vec_1.size() == 0 || lineSegment_vec_2.size() == 0 && limit > Min_distance())
-				{
-					--limit;
-				}
-				else
-				{
-					if (lineSegment_vec_1.size() == 0 || lineSegment_vec_2.size() == 0)
-					{
-						break;
-					}
-					lineSegment = algorthm_for_2(lineSegment_vec_1);
-					lineSegment_vec_3.push_back(lineSegment);
-					lineSegment = algorthm_for_2(lineSegment_vec_2);
-					lineSegment_vec_3.push_back(lineSegment);
-					container_step2.push_back(lineSegment_vec_3);
-					break;
-				}
+				break;
 			}
+			vector<vector<LineSegment>> result;
+			KMeanLineSegment(lineSegment_vec, result, 2,SubLineSegmentByDistance);
+			LineSegment lineSegment;
+			vector<LineSegment> result_vec;
+			lineSegment = algorthm_for_2(result[0]);
+			result_vec.push_back(lineSegment);
+			lineSegment = algorthm_for_2(result[1]);
+			result_vec.push_back(lineSegment);
+			container_step2.push_back(result_vec);	
 		}
 	}
 	//使每个组别由一条线段来描述
