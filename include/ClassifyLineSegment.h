@@ -4,7 +4,9 @@
 #include<vector>
 #include <climits>
 #include <algorithm>
+#include <KMeanClassify.h>
 #include "LineSegment.h"
+
 
 using std::vector;
 
@@ -173,7 +175,7 @@ private:
 				break;
 			}
 			vector<vector<LineSegment>> result;
-			KMeanLineSegment(lineSegment_vec, result, 2,SubLineSegmentByDistance);
+			KMeanClassify<LineSegment>(lineSegment_vec, result, 2,SubLineSegmentByDistance);
 			LineSegment lineSegment;
 			vector<LineSegment> result_vec;
 			lineSegment = algorthm_for_2(result[0]);
